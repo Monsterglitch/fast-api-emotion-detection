@@ -9,4 +9,4 @@ pip install -r requirements.txt
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 ```
 
-_This repository doesn't have image and csv files that are used for training and validation_
+_This repository doesn't have image and csv files that were used in training and validation_
