@@ -47,39 +47,34 @@ def most_common_string(strings):
 async def predict_image(frame):
     gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     faces = faceCascade.detectMultiScale(gray_image, 1.1, 4)
+
     if len(faces) == 0:
         return -1
-    
-    face_roi = None
-    for (x, y, w, h) in faces:
-        roi_grey = gray_image[y:y+h, x:x+w]
-        roi_color = frame[y:y+h, x:x+w]
-        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-        facess = faceCascade.detectMultiScale(roi_grey)
-        if len(facess) == 0:
-            continue
-        for (ex, ey, ew, eh) in facess:
-            face_roi = roi_color[ey:ey+eh, ex:ex+ew]
-            break
 
-    if face_roi is None:
-        return -1
+    # Use the first detected face
+    (x, y, w, h) = faces[0]
+    face_roi = frame[y:y+h, x:x+w]
 
+    # Draw rectangle around the face
+    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+
+    # Convert face ROI to grayscale, resize to 48x48, normalize, and prepare for model
     face_roi_grey = cv2.cvtColor(face_roi, cv2.COLOR_BGR2GRAY)
-    final_img = cv2.resize(face_roi_grey, (48, 48))
-    final_img = np.expand_dims(final_img, axis=0)
-    final_img = np.expand_dims(final_img, axis=0)
-    final_img = final_img / 255.0
+    final_img = cv2.resize(face_roi_grey, (48, 48)) / 255.0
+    final_img = np.expand_dims(final_img, axis=(0, 1))  # Add batch and channel dimensions
     test_img = torch.from_numpy(final_img).to(device).float()
 
+    # Predict emotion using the model
     with torch.no_grad():
         prediction = model(test_img)
         op = F.softmax(prediction, dim=1)
 
+    # Emotion labels
     emotions = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"]
     predicted_class = torch.argmax(op).item()
 
     return emotions[predicted_class]
+
 
 
 @app.post("/predict_video")
